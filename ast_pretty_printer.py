@@ -22,15 +22,11 @@ class DecorativePrinter(ast.NodeVisitor):
                 self.level -= 1
             return new_visit
         try:
-            method = getattr(self, "visit_{}".format(node.__class__.__name__))
+            # method = getattr(self, "visit_{}".format(node.__class__.__name__)) #what's the difference betw. .__class__ vs. type()?
+            method = getattr(self, "visit_{}".format(type(node).__name__))
         except AttributeError:
             method = self.generic_visit
         gen_visit_deco(method)(node)
-
-
-    # def visit_Module(self, node):
-    #     print(type(node).__name__)
-    #     ast.NodeVisitor.generic_visit(self, node)
 
     def visit_FunctionDef(self, node):
         print(self.prefix + type(node).__name__ +': '+ node.name)
@@ -38,10 +34,20 @@ class DecorativePrinter(ast.NodeVisitor):
 
     def visit_arguments(self, node):
         print(self.prefix + type(node).__name__ +': ')
-        ast.NodeVisitor.generic_visit(self, node)
+        for field in node._fields:
+            list_to_visit = getattr(node, field)
+            if list_to_visit:
+                print(self.prefix + field + ': ')
+                for item in list_to_visit:
+                    self.level += 1
+                    ast.NodeVisitor.visit(self, item)
+                    self.level -= 1
+
+    def visit_arg(self, node):
+        print(self.prefix + node.arg)
 
     def visit_Name(self, node):
-        print(self.prefix+'Name:' + node.id)
+        print(self.prefix+ node.id)
 
     def visit_Num(self, node):
         print(self.prefix+'Num:' + str(node.__dict__['n']))
@@ -55,7 +61,7 @@ class DecorativePrinter(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         print(self.prefix+'Assign:')
-        ast.NodeVisitor.generic_visit(self, node)
+        ast.NodeVisitor.visit(self, node)
 
     def visit_Expr(self, node):
         print(self.prefix+'Expr:')
