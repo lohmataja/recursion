@@ -1,6 +1,6 @@
 import ast, inspect
 
-class DecorativePrinter(ast.NodeVisitor):
+class PrettyPrinter(ast.NodeVisitor):
     def __init__(self):
         self.res = ''
         self.level = -1
@@ -79,7 +79,7 @@ class DecorativePrinter(ast.NodeVisitor):
 tree = ast.parse(open('./test.py', 'r').read())
 print(ast.dump(tree))
 
-d = DecorativePrinter()
+d = PrettyPrinter()
 d.visit(tree)
 
 # v = PrettyPrinter()
