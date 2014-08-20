@@ -67,20 +67,61 @@ class PrettyPrinter(ast.NodeVisitor):
         print(self.prefix+'Expr:')
         ast.NodeVisitor.generic_visit(self, node)
 
-# def f(n, accum=1):
-#     if n <= 1:
-#         return accum
-#     else:
-#         return f(n - 1, accum * n)
-#
-#
+def polish(dump, prefix='\t'):
+    new_str = []
+    level = 0
+    for i in range(len(dump)):
+        if dump[i] == '(':
+            level += 1
+            new_str.append('('+('\n'+prefix*level)*(dump[i+1] != ')'))
+
+        elif dump[i] == '[':
+            level += 1
+            new_str.append('['+('\n'+prefix*level)*(dump[i+1] != ']'))
+
+        elif dump[i] == ',':
+            new_str.append(',\n'+prefix*level)
+
+        elif dump[i] == ')' or dump[i] == ']':
+            level -= 1
+            new_str.append(dump[i])
+        elif dump[i] == ' ':
+            continue
+
+        else:
+            new_str.append(dump[i])
+    return ''.join(new_str)
+
+def tail_fact(n, accum=1):
+    if n <= 1:
+        return accum
+    else:
+        return tail_fact(n - 1, accum * n)
+
+def rec_fact(n):
+    if n <= 1:
+        return 1
+    else:
+        return n * rec_fact(n-1)
+
+# dump = ast.dump(ast.parse(inspect.getsource(tail_fact)))
+# print dump
+# print(polish(dump))
+
+# a = "Module(body=[FunctionDef(name='tail_fact', args=arguments(args=[Name(id='n', ctx=Param()), Name(id='accum', ctx=Param())],'"
+# print a
+# print(polish(a, '  '))
+
 # tree = ast.parse(inspect.getsource(f))
+# d = PrettyPrinter()
+# tree = ast.parse(open('./test.py', 'r').read())
+# print(ast.dump(tree))
 
-tree = ast.parse(open('./test.py', 'r').read())
-print(ast.dump(tree))
-
-d = PrettyPrinter()
-d.visit(tree)
+# d.visit(ast.parse(inspect.getsource(rec_fact)))
+# print(ast.dump(ast.parse(inspect.getsource(rec_fact))))
+# d.visit(ast.parse(inspect.getsource(tail_fact)))
+# print(ast.dump(ast.parse(inspect.getsource(tail_fact))))
+# d.visit(tree)
 
 # v = PrettyPrinter()
 # v.visit(tree)
