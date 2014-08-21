@@ -3,20 +3,29 @@ import ast, inspect, imp
 from ast_pretty_printer import print_ast
 import sys
 
-def isRecursive(tree):
-    try:
-        #get function name and function definition subtree
-        for node in ast.walk(tree):
-            if type(node).__name__ == 'FunctionDef':
-                name = node.name
-                func_def = node
-        for node in ast.walk(func_def): #find whether this func_def contains recursive calls
-            if type(node).__name__ == 'Call' and node.func.id == name:
-                return True
-        return False
-    except UnboundLocalError:
-        print('No functions found')
-        return False
+"""
+High level algorithm:
+takes in a file, finds all recursive functions
+calls translator for each of the recursive functions found.
+"""
+#TODO: how do you distinguish between a normal-recursive and tail-recursive function?
+#TODO: deal with base case that is not a value, but is an expression.
+
+# def is_recursive_function(tree):
+#     try:
+#         #get function name and function definition subtree
+#         for node in ast.walk(tree):
+#             if type(node).__name__ == 'FunctionDef':
+#                 name = node.name
+#                 func_def = node
+#         for node in ast.walk(func_def): #find whether this func_def contains recursive calls
+#             if type(node).__name__ == 'Call' and node.func.id == name:
+#                 return True
+#         return False
+#     except UnboundLocalError:
+#         print('No functions found')
+#         return False
+
 
 def is_recursive(tree, name):
     """
@@ -35,9 +44,6 @@ class InfoGatherer(ast.NodeVisitor):
         self.name = None
         self.default_value = None
         self.recursive_returns = []
-
-    # def find_recursive_returns(self, tree):
-    #     return [node for node in ast.walk(tree) if type(node).__name__ == 'Return' and self.is_recursive(node)]
 
     def visit_FunctionDef(self, node):
         self.name = node.name
@@ -102,6 +108,14 @@ class Mangler(ast.NodeTransformer):
     def visit_Print(self, node):
         return node
 
+class ModuleCrawler(ast.NodeTransformer):
+    def visit_Module(self, tree):
+        for node in ast.iter_child_nodes(tree):
+            if type(node).__name__ == 'FunctionDef' and is_recursive(node, node.name):
+                m = Mangler(node)
+                m.visit(node)
+        return tree
+
 def tail_fact(n, accum=1):
     if n <= 1: return accum
     else: return tail_fact(n - 1, accum * n)
@@ -116,9 +130,9 @@ def rec_fact(n):
 (filename,) = sys.argv[1:]
 tree = ast.parse(open(filename, 'r').read())
 
-m = Mangler(tree)
+m = ModuleCrawler()
 m.visit(tree)
-# print_ast(tree)
+print_ast(tree)
 
 ast.fix_missing_locations(tree)
 code = compile(tree, filename, "exec")
