@@ -80,18 +80,13 @@ class Mangler(ast.NodeTransformer):
         if is_recursive(node, self.name):
             #substitute the recursive call with accum, store the call in self.outer
             ast.NodeTransformer.generic_visit(self, node)
-            print_ast(node)
-            print_ast(self.outer)
             self.outer.args.append(node.value)
-            print_ast(self.outer)
             return ast.Return(value=self.outer)
         else:
             return ast.Return(value=self.make_Name('accum', ast.Load()))
 
     def visit_Call(self, node):
         if node.func.id == self.name:
-            # print 'Visiting Call'
-            # print_ast(node)
             self.outer = node
             return self.make_Name('accum', ast.Load())
         else:
@@ -123,7 +118,7 @@ tree = ast.parse(open(filename, 'r').read())
 
 m = Mangler(tree)
 m.visit(tree)
-print_ast(tree)
+# print_ast(tree)
 
 ast.fix_missing_locations(tree)
 code = compile(tree, filename, "exec")
