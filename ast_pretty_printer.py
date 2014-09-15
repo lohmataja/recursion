@@ -92,6 +92,9 @@ def polish(dump, prefix='\t'):
             new_str.append(dump[i])
     return ''.join(new_str)
 
+def print_ast(tree, prefix='  '):
+    print(polish(ast.dump(tree, prefix)))
+
 def tail_fact(n, accum=1):
     if n <= 1:
         return accum
@@ -103,14 +106,6 @@ def rec_fact(n):
         return 1
     else:
         return n * rec_fact(n-1)
-
-# dump = ast.dump(ast.parse(inspect.getsource(tail_fact)))
-# print dump
-# print(polish(dump))
-
-# a = "Module(body=[FunctionDef(name='tail_fact', args=arguments(args=[Name(id='n', ctx=Param()), Name(id='accum', ctx=Param())],'"
-# print a
-# print(polish(a, '  '))
 
 # tree = ast.parse(inspect.getsource(f))
 # d = PrettyPrinter()
