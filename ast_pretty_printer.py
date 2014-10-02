@@ -1,5 +1,66 @@
 import ast, inspect
 
+class AltDump(ast.NodeVisitor):
+
+    def visit(self, node):
+        res = []
+        res.append(type(node).__name__+'(')
+        field_values = []
+        for field, value in ast.iter_fields(node):
+            if type(value) == list:
+                field_values.append(field+'=['+ ', '.join([self.visit(item) for item in value])+']')
+            elif isinstance(value, ast.AST):
+                field_values.append(field+'='+self.visit(value))
+            # elif value == None:
+            #     field_values.append(field+'=None')
+            else:
+                field_values.append(field+'='+ ("'{}'".format(value) if type(value) == str
+                                    else str(value)))
+        res.append(', '.join(field_values))
+        self.generic_visit(node)
+        res.append(')')
+        return ''.join(map(str, res))
+
+class Pretty(ast.NodeVisitor):
+    def __init__(self, filler="  "):
+        self.res = ''
+        self.level = -1
+        self.filler = filler
+        self.out = []
+
+    @property
+    def prefix(self):
+        return self.level * self.filler
+
+    def visit(self, node):
+        self.level +=1
+        print(node)
+        self.out.append(type(node).__name__ +'(')
+        self.level += 1
+        for field, value in ast.iter_fields(node):
+            print(field, value)
+            self.out.append(self.prefix+field)
+            if type(value) == list and len(value) > 0:
+                self.out.append('=[\n')
+                for n in value:
+                    self.visit(n)
+                    # self.out.append(self.prefix+type(n).__name__ +'(\n')
+                    # for child in ast.iter_child_nodes(n):
+                    #     self.visit(child)
+                self.out.append('=\n')
+            elif isinstance(value, ast.AST):
+                self.out.append('=')
+                self.generic_visit(value)
+            else:
+                self.out.append('=' + str(value) + '\n')
+        self.level -= 2
+
+    def visit_Name(self, node):
+        print("I'm here!")
+        self.level += 1
+        self.out.append(self.prefix + ast.dump(node))
+        self.level -= 1
+
 class PrettyPrinter(ast.NodeVisitor):
     def __init__(self):
         self.res = ''
@@ -93,7 +154,7 @@ def polish(dump, prefix='\t'):
     return ''.join(new_str)
 
 def print_ast(tree, prefix='  '):
-    print(polish(ast.dump(tree, prefix)))
+    print(polish(ast.dump(tree), prefix))
 
 def tail_fact(n, accum=1):
     if n <= 1:
@@ -108,11 +169,20 @@ def rec_fact(n):
         return n * rec_fact(n-1)
 
 # tree = ast.parse(inspect.getsource(f))
-# d = PrettyPrinter()
+# d = Pretty()
 # tree = ast.parse(open('./test.py', 'r').read())
 # print(ast.dump(tree))
-
-# d.visit(ast.parse(inspect.getsource(rec_fact)))
+tree = ast.parse(inspect.getsource(rec_fact))
+# tree = ast.parse("a = 5")
+a = AltDump()
+my_dump = a.visit(tree)
+# print(''.join(a.res))
+py_dump = ast.dump(tree)
+print my_dump
+print(py_dump)
+# d.visit(tree)
+# print(''.join(d.out))
+# print_ast(tree, '  ')
 # print(ast.dump(ast.parse(inspect.getsource(rec_fact))))
 # d.visit(ast.parse(inspect.getsource(tail_fact)))
 # print(ast.dump(ast.parse(inspect.getsource(tail_fact))))
@@ -120,7 +190,3 @@ def rec_fact(n):
 
 # v = PrettyPrinter()
 # v.visit(tree)
-
-# u = UglyPrinter()
-# res = u.visit(tree)
-# u.pretty_print(res)
